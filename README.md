@@ -24,7 +24,7 @@ CS2 can already do this with `startmovie`, but the command is hidden in retail b
 
 Frame by Frame loads straight into CS2 through a `gameinfo.gi` entry, then loads Valve's real server module and passes everything through, the same way [Ready Up](https://github.com/Auto-Tournament/ready-up) does. It patches nothing in the engine and hooks no functions.
 
-It makes exactly one call: `ICvar::StripDevelopmentFlags()`, CS2's own function that unhides developer-only commands. Before calling it, the plugin checks that the function really is that one: its code must contain the flag mask it clears. If a CS2 update moves it, the check fails and the plugin logs it and does nothing. The game keeps running normally and only the movie commands stay hidden.
+It makes exactly one call: `ICvar::StripDevelopmentFlags()`, CS2's own function that unhides developer-only commands. That unhides all of them, not only the movie ones: [docs/hidden-commands.md](docs/hidden-commands.md) lists what a server gets. Before calling it, the plugin checks that the function really is that one: its code must contain the flag mask it clears. If a CS2 update moves it, the check fails and the plugin logs it and does nothing. The game keeps running normally and only the movie commands stay hidden.
 
 ## How a recording works
 
