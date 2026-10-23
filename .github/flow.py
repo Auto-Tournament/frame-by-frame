@@ -134,48 +134,48 @@ def css():
 
 
 STYLE = """
-    /* Auto Tournament's Ember palette: dark first, a warm light version for light mode */
-    .bg { fill: #faf6f4; }
-    .dot { fill: #e6dcd8; }
-    .box { fill: #ffffff; stroke: #2a2220; stroke-width: 1.5; }
-    .hot { stroke: #d1512c; }
-    .belt { fill: #f1e9e6; stroke: #2a2220; stroke-width: 1.5; }
-    .tread { fill: none; stroke: #2a2220; stroke-opacity: .28; stroke-dasharray: 2 6; animation: belt .3s linear infinite; }
+    /* Ready Up's colours, from its grenade logo: blue on near-black, with a light version */
+    .bg { fill: #f5f6f8; }
+    .dot { fill: #dcdfe5; }
+    .box { fill: #ffffff; stroke: #1d1d1f; stroke-width: 1.5; }
+    .hot { stroke: #2f6bff; }
+    .belt { fill: #eceef2; stroke: #1d1d1f; stroke-width: 1.5; }
+    .tread { fill: none; stroke: #1d1d1f; stroke-opacity: .28; stroke-dasharray: 2 6; animation: belt .3s linear infinite; }
     .treadv { animation-name: beltv; }
-    .slot { fill: none; stroke: #b9aca7; stroke-dasharray: 3 3; }
-    .h { fill: #2a2220; font-size: 13px; font-weight: 700; }
-    .s { fill: #6b625f; font-size: 10px; }
-    .x { fill: #2a2220; font-size: 9px; }
-    .acc { fill: #d1512c; }
-    .acct { fill: #d1512c; font-size: 9px; }
-    .chip { fill: none; stroke: #b9aca7; } .chipa { fill: none; stroke: #d1512c; }
-    .lamp { fill: #e6dcd8; } .red { fill: #d93a32; } .grn { fill: #1f9d4c; }
-    .tga1 { fill: #6f93b8; } .tga2 { fill: #9b7a52; } .edge { fill: none; stroke: #2a2220; stroke-width: 1; }
-    .rawf { fill: #ffffff; } .rawl { stroke: #d1512c; stroke-width: 1.6; }
-    .barf { fill: #f1e9e6; stroke: #2a2220; stroke-width: 1; }
-    .basket { fill: none; stroke: #2a2220; stroke-width: 1.5; }
-    .hatch { stroke: #e6dcd8; }
-    .wave { fill: none; stroke: #d1512c; stroke-width: 1.6; }
-    .audio { fill: none; stroke: #d1512c; stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; animation: flow .5s linear infinite; }
+    .slot { fill: none; stroke: #939291; stroke-dasharray: 3 3; }
+    .h { fill: #1d1d1f; font-size: 13px; font-weight: 700; }
+    .s { fill: #5d5b5b; font-size: 10px; }
+    .x { fill: #1d1d1f; font-size: 9px; }
+    .acc { fill: #2f6bff; }
+    .acct { fill: #16398f; font-size: 9px; }
+    .chip { fill: none; stroke: #939291; } .chipa { fill: none; stroke: #2f6bff; }
+    .lamp { fill: #dcdfe5; } .red { fill: #d93a32; } .grn { fill: #1f9d4c; }
+    .tga1 { fill: #6f93b8; } .tga2 { fill: #9b7a52; } .edge { fill: none; stroke: #1d1d1f; stroke-width: 1; }
+    .rawf { fill: #ffffff; } .rawl { stroke: #2f6bff; stroke-width: 1.6; }
+    .barf { fill: #eceef2; stroke: #1d1d1f; stroke-width: 1; }
+    .basket { fill: none; stroke: #1d1d1f; stroke-width: 1.5; }
+    .hatch { stroke: #dcdfe5; }
+    .wave { fill: none; stroke: #2f6bff; stroke-width: 1.6; }
+    .audio { fill: none; stroke: #2f6bff; stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; animation: flow .5s linear infinite; }
     .glow { fill: url(#glow); }
     @media (prefers-color-scheme: dark) {
-      .bg { fill: #100908; }
-      .dot { fill: #2a211e; }
-      .box { fill: #18110e; stroke: #c4bcb9; }
-      .hot { stroke: #ff6a3d; }
-      .edge { stroke: #c4bcb9; }
-      .belt { fill: #211815; stroke: #c4bcb9; }
-      .tread { stroke: #c4bcb9; }
-      .slot, .chip { stroke: #4d4442; }
-      .h, .x { fill: #f4edeb; }
-      .s { fill: #938a87; }
-      .acc, .acct { fill: #ff6a3d; }
-      .chipa, .rawl, .wave, .audio { stroke: #ff6a3d; }
-      .lamp { fill: #2a1d1b; } .red { fill: #f2645f; } .grn { fill: #3fc168; }
-      .rawf { fill: #211815; }
-      .barf { fill: #211815; stroke: #c4bcb9; }
-      .basket { stroke: #c4bcb9; }
-      .hatch { stroke: #211815; }
+      .bg { fill: #131315; }
+      .dot { fill: #282828; }
+      .box { fill: #1d1d1f; stroke: #c7c4c3; }
+      .hot { stroke: #6b95ff; }
+      .edge { stroke: #c7c4c3; }
+      .belt { fill: #282828; stroke: #c7c4c3; }
+      .tread { stroke: #c7c4c3; }
+      .slot, .chip { stroke: #4d4d4d; }
+      .h, .x { fill: #f4f4f5; }
+      .s { fill: #939291; }
+      .acc { fill: #6b95ff; } .acct { fill: #6b95ff; }
+      .chipa, .rawl, .wave, .audio { stroke: #6b95ff; }
+      .lamp { fill: #2a2929; } .red { fill: #f2645f; } .grn { fill: #3fc168; }
+      .rawf { fill: #282828; }
+      .barf { fill: #282828; stroke: #c7c4c3; }
+      .basket { stroke: #c7c4c3; }
+      .hatch { stroke: #282828; }
     }
     @keyframes belt { to { stroke-dashoffset: -8; } }
     @keyframes beltv { to { stroke-dashoffset: 8; } }
@@ -192,9 +192,10 @@ def hbelt(x, y, w, h=18):
             f'<path class="tread" stroke-width="{h - 4}" d="M{x},{y + h / 2} H{x + w}"/>')
 
 
-def vbelt(x, y, h, w=16):
+def vbelt(x, y, h, w=16, up=False):
+    """a vertical belt; it runs down unless up."""
     return (f'<rect class="belt" x="{x}" y="{y}" width="{w}" height="{h}"/>'
-            f'<path class="tread treadv" stroke-width="{w - 4}" d="M{x + w / 2},{y} V{y + h}"/>')
+            f'<path class="tread{" treadv" if up else ""}" stroke-width="{w - 4}" d="M{x + w / 2},{y} V{y + h}"/>')
 
 
 def card():
@@ -218,7 +219,7 @@ def svg():
     o.append(vbelt(760, 206, 54))
     o.append(hbelt(1070, 142, 40) + label(1090, 118, "mp4", "acct"))
     # audio: CS2 down, along the bottom, up into Encode
-    o.append(vbelt(287, 206, 150) + hbelt(287, 356, 700, 16) + vbelt(971, 326, 30))
+    o.append(vbelt(287, 206, 150) + hbelt(287, 356, 700, 16) + vbelt(971, 326, 30, up=True))
     o.append('<path class="audio" d="M295,206 V364 H979 V326"/>')
     o.append('<path class="wave" d="M330,344 C333,337 335,337 338,344 S343,351 346,344 S351,337 354,344 S359,351 362,344"/>')
     o.append(label(370, 347, "game audio (WAV), from CS2 to the encoder", "acct", "start"))
@@ -272,7 +273,7 @@ def svg():
   </style>
   <defs>
     <pattern id="grid" width="18" height="18" patternUnits="userSpaceOnUse"><circle class="dot" cx="1" cy="1" r="1"/></pattern>
-    <radialGradient id="glow"><stop offset="0" stop-color="#ff6a3d" stop-opacity=".45"/><stop offset="1" stop-color="#ff6a3d" stop-opacity="0"/></radialGradient>
+    <radialGradient id="glow"><stop offset="0" stop-color="#2f6bff" stop-opacity=".5"/><stop offset="1" stop-color="#2f6bff" stop-opacity="0"/></radialGradient>
   </defs>
   <rect class="bg" width="1240" height="420" rx="14"/>
   <rect width="1240" height="420" rx="14" fill="url(#grid)"/>
