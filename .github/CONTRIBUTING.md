@@ -15,6 +15,8 @@ Frame by Frame is part of [Auto Tournament](https://github.com/Auto-Tournament).
 1. Fork the repo and create a branch.
 2. Build in the Steam Runtime sniper SDK (see the README) and run `ctest`.
 3. Keep the engine surface as small as it is now. Anything new that touches the engine needs an identity check like the one in `src/strip.h`, so a CS2 update turns it off instead of calling the wrong code.
-4. Open a pull request against `master` and describe how you tested it.
+4. Open a pull request against `master`.
+
+The [contribution rules](https://github.com/Auto-Tournament/.github/blob/main/CONTRIBUTING.md) apply to every PR: keep it small, say what you ran and what you saw, say if an AI tool wrote any of it (and read every line), and leave the UI and docs to the maintainer.
 
 By contributing you agree to the [Auto Tournament CLA](https://github.com/Auto-Tournament/auto-tournament/blob/main/CLA.md), and your contribution is licensed under the [PolyForm Noncommercial License 1.0.0](../LICENSE).
