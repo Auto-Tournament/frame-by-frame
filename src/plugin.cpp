@@ -1,7 +1,10 @@
 // Frame by Frame: loads in CS2's place as libserver.so, passes everything to
 // Valve's real server module, and asks CS2 to unhide its own movie commands.
-// It hooks nothing and writes no engine memory. The one thing a CS2 update can
-// break is the ICvar slot in strip.h, and then the commands simply stay hidden.
+// It also swaps one function pointer, the client's FrameStageNotify, to run
+// the recorder's commands on exact frames (frame_hook.cpp). What a CS2 update
+// can break: the ICvar slot in strip.h (the commands stay hidden) and the slots
+// in frame_hook.h (the hook stays off). Either way the game runs on.
+#include "frame_hook.h"
 #include "strip.h"
 
 #include <dlfcn.h>
@@ -14,6 +17,8 @@ namespace fbf {
 namespace {
 
 using CreateInterfaceFn = void* (*)(const char*, int*);
+
+}  // namespace
 
 void Log(const char* fmt, ...) {
   char line[512];
@@ -30,6 +35,8 @@ void Log(const char* fmt, ...) {
     fprintf(stderr, "[Frame by Frame] %s\n", line);
   }
 }
+
+namespace {
 
 std::string ThisDir() {
   Dl_info info{};
@@ -85,6 +92,11 @@ void StripDevelopmentFlags() {
 
 extern "C" __attribute__((visibility("default"))) void* CreateInterface(const char* name, int* code) {
   fbf::StripDevelopmentFlags();
+  static bool hooking = [] {
+    fbf::StartFrameHook(fbf::ThisDir() + "/../../actions.txt");
+    return true;
+  }();
+  (void)hooking;
   auto real = fbf::RealCreateInterface();
   if (!real) {
     if (code) *code = 1;
