@@ -1,108 +1,195 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 640" width="800" height="640" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
-  <title>How a Frame by Frame recording works</title>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 270" width="800" height="270" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>Frame by Frame: CS2 renders each frame, the recorder converts and encodes it into a clip</title>
   <style>
     .bg { fill: #ffffff; }
-    .lane { fill: #f6f8fa; stroke: #d0d7de; }
-    .head { fill: #1f2328; font-size: 15px; font-weight: 600; }
-    .box { fill: #ffffff; stroke: #8c959f; stroke-width: 1.2; }
-    .rec { stroke: #0969da; }
-    .cs2 { stroke: #bf8700; }
-    .loop { fill: none; stroke: #8250df; stroke-dasharray: 6 4; stroke-width: 1.4; }
-    .t { fill: #1f2328; font-size: 13px; }
-    .s { fill: #59636e; font-size: 11.5px; }
-    .c { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; fill: #59636e; }
-    .n { fill: #ffffff; font-size: 11px; font-weight: 700; }
-    .nb { fill: #0969da; }
-    .ny { fill: #bf8700; }
-    .lt { fill: #8250df; font-size: 11.5px; font-weight: 600; }
-    .a { stroke: #8c959f; stroke-width: 1.4; fill: none; marker-end: url(#arrow); }
-    .ah { fill: #8c959f; }
+    .m { fill: #f6f8fa; stroke: #8c959f; stroke-width: 1.5; }
+    .arm { fill: #d0d7de; }
+    .t { fill: #1f2328; font-size: 13px; font-weight: 600; }
+    .s { fill: #59636e; font-size: 11px; }
+    .belt { fill: #d0d7de; }
+    .roll { fill: #8c959f; }
+    .tread { stroke: #8c959f; stroke-width: 3; stroke-dasharray: 12 8.6; fill: none; animation: belt .2s linear infinite; }
+    .pipe { stroke: #d0d7de; stroke-width: 6; fill: none; stroke-linecap: round; }
+    .flow { stroke: #bf8700; stroke-width: 2; fill: none; stroke-dasharray: 3 9; stroke-linecap: round; animation: belt .4s linear infinite; }
+    .led { fill: #8c959f; }
+    .on { fill: #2da44e; opacity: 0; animation: blink 1.5s linear infinite; }
+    .rec { fill: #cf222e; animation: rec 1s steps(2) infinite; }
+    .clip { fill: #ffffff; stroke: #0969da; stroke-width: 1.5; }
+    .play { fill: #0969da; }
     @media (prefers-color-scheme: dark) {
       .bg { fill: #0d1117; }
-      .lane { fill: #151b23; stroke: #3d444d; }
-      .head, .t { fill: #f0f6fc; }
-      .box { fill: #0d1117; stroke: #656c76; }
-      .rec { stroke: #4493f8; }
-      .cs2 { stroke: #d29922; }
-      .loop { stroke: #ab7df8; }
-      .s, .c { fill: #9198a1; }
-      .n { fill: #0d1117; }
-      .nb { fill: #4493f8; }
-      .ny { fill: #d29922; }
-      .lt { fill: #ab7df8; }
-      .a { stroke: #656c76; }
-      .ah { fill: #656c76; }
+      .m { fill: #151b23; stroke: #656c76; }
+      .arm, .belt, .pipe { fill: #3d444d; stroke: #3d444d; }
+      .arm, .belt { stroke: none; }
+      .t { fill: #f0f6fc; }
+      .s { fill: #9198a1; }
+      .roll, .led { fill: #656c76; }
+      .tread { stroke: #656c76; }
+      .flow { stroke: #d29922; }
+      .clip { fill: #0d1117; stroke: #4493f8; }
+      .play { fill: #4493f8; }
     }
+    @keyframes belt { to { stroke-dashoffset: -20.6; } }
+    @keyframes blink { 0%, 25% { opacity: 1; } 26%, 100% { opacity: 0; } }
+    @keyframes rec { to { opacity: .2; } }
+
+    /* a frame: rides from CS2 (x 110) to the clip bin (x 730) in 6 s; four of them, 1.5 s apart */
+    .f { animation: ride 6s linear infinite; }
+    .f1 { animation-delay: -1.5s; } .f2 { animation-delay: -3s; } .f3 { animation-delay: -4.5s; }
+    @keyframes ride {
+      0% { transform: translate(0, -18px); opacity: 0; }
+      5% { transform: translate(31px, 0); opacity: 1; }
+      94% { opacity: 1; }
+      100% { transform: translate(620px, 0); opacity: 0; }
+    }
+    .tga { animation: tga 6s linear infinite; }
+    .yuv { animation: yuv 6s linear infinite; }
+    .mp4 { animation: mp4 6s linear infinite; }
+    .f1 .tga, .f1 .yuv, .f1 .mp4 { animation-delay: -1.5s; }
+    .f2 .tga, .f2 .yuv, .f2 .mp4 { animation-delay: -3s; }
+    .f3 .tga, .f3 .yuv, .f3 .mp4 { animation-delay: -4.5s; }
+    @keyframes tga { 0%, 51% { opacity: 1; } 52%, 100% { opacity: 0; } }
+    @keyframes yuv { 0%, 51% { opacity: 0; } 52%, 77% { opacity: 1; } 78%, 100% { opacity: 0; } }
+    @keyframes mp4 { 0%, 77% { opacity: 0; } 78%, 100% { opacity: 1; } }
+
+    /* each machine's light flashes as a frame passes under it */
+    .l2 { animation-delay: .05s; } .l3 { animation-delay: .1s; } .l4 { animation-delay: .14s; }
+
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
   </style>
-  <defs>
-    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-      <path class="ah" d="M0,0 L10,5 L0,10 z"/>
-    </marker>
-  </defs>
 
-  <rect class="bg" x="0" y="0" width="800" height="640"/>
-  <rect class="lane" x="10" y="10" width="385" height="620" rx="8"/>
-  <rect class="lane" x="405" y="10" width="385" height="620" rx="8"/>
-  <text class="head" x="30" y="38">Auto Tournament recorder</text>
-  <text class="head" x="425" y="38">CS2 with Frame by Frame</text>
+  <rect class="bg" width="800" height="270"/>
 
-  <!-- 1 -->
-  <rect class="box rec" x="30" y="56" width="345" height="62" rx="6"/>
-  <circle class="nb" cx="50" cy="76" r="10"/><text class="n" x="50" y="80" text-anchor="middle">1</text>
-  <text class="t" x="68" y="81">Adds the plugin to gameinfo.gi</text>
-  <text class="c" x="68" y="101">Game csgo/frame-by-frame, then -insecure</text>
-  <path class="a" d="M375,87 L423,87"/>
+  <!-- game audio: CS2's WAV, piped to the encoder -->
+  <path class="pipe" d="M110,64 V36 H590 V64"/>
+  <path class="flow" d="M110,64 V36 H590 V64"/>
+  <text class="s" x="350" y="28" text-anchor="middle">game audio (WAV)</text>
 
-  <!-- 2 -->
-  <rect class="box cs2" x="425" y="56" width="345" height="62" rx="6"/>
-  <circle class="ny" cx="445" cy="76" r="10"/><text class="n" x="445" y="80" text-anchor="middle">2</text>
-  <text class="t" x="463" y="81">Checks StripDevelopmentFlags, calls it</text>
-  <text class="s" x="463" y="101">movie commands unhidden; no hooks, no patches</text>
-  <path class="a" d="M597,118 L597,140 L203,140 L203,156"/>
+  <!-- machines -->
+  <g>
+    <rect class="m" x="50" y="64" width="120" height="84" rx="8"/>
+    <text class="t" x="110" y="90" text-anchor="middle">CS2</text>
+    <text class="s" x="110" y="108" text-anchor="middle">renders frame</text>
+    <text class="s" x="110" y="122" text-anchor="middle">by frame</text>
+    <circle class="rec" cx="156" cy="78" r="4"/>
+    <rect class="arm" x="98" y="148" width="24" height="10"/>
+  </g>
+  <g>
+    <rect class="m" x="210" y="64" width="120" height="84" rx="8"/>
+    <text class="t" x="270" y="90" text-anchor="middle">RAM</text>
+    <text class="s" x="270" y="108" text-anchor="middle">TGA frames</text>
+    <text class="s" x="270" y="122" text-anchor="middle">in /dev/shm</text>
+    <circle class="led" cx="316" cy="78" r="4"/><circle class="on l2" cx="316" cy="78" r="4"/>
+    <rect class="arm" x="258" y="148" width="24" height="10"/>
+  </g>
+  <g>
+    <rect class="m" x="370" y="64" width="120" height="84" rx="8"/>
+    <text class="t" x="430" y="90" text-anchor="middle">Convert</text>
+    <text class="s" x="430" y="108" text-anchor="middle">TGA → raw video</text>
+    <text class="s" x="430" y="122" text-anchor="middle">as frames arrive</text>
+    <circle class="led" cx="476" cy="78" r="4"/><circle class="on l3" cx="476" cy="78" r="4"/>
+    <rect class="arm" x="418" y="148" width="24" height="10"/>
+  </g>
+  <g>
+    <rect class="m" x="530" y="64" width="120" height="84" rx="8"/>
+    <text class="t" x="590" y="90" text-anchor="middle">Encode</text>
+    <text class="s" x="590" y="108" text-anchor="middle">AV1 · H.265 · H.264</text>
+    <text class="s" x="590" y="122" text-anchor="middle">+ the audio</text>
+    <circle class="led" cx="636" cy="78" r="4"/><circle class="on l4" cx="636" cy="78" r="4"/>
+    <rect class="arm" x="578" y="148" width="24" height="10"/>
+  </g>
 
-  <!-- 3 -->
-  <rect class="box rec" x="30" y="158" width="345" height="62" rx="6"/>
-  <circle class="nb" cx="50" cy="178" r="10"/><text class="n" x="50" y="182" text-anchor="middle">3</text>
-  <text class="t" x="68" y="183">Plays the demo, checks the commands</text>
-  <text class="c" x="68" y="203">playdemo, then find startmovie</text>
-  <path class="a" d="M203,220 L203,262"/>
+  <!-- the clip bin -->
+  <g>
+    <rect class="clip" x="704" y="96" width="60" height="38" rx="5"/>
+    <rect class="clip" x="698" y="104" width="60" height="38" rx="5"/>
+    <rect class="clip" x="692" y="112" width="60" height="38" rx="5"/>
+    <path class="play" d="M716,123 L716,139 L730,131 z"/>
+    <text class="t" x="728" y="80" text-anchor="middle">MP4 clips</text>
+  </g>
 
-  <!-- loop -->
-  <rect class="loop" x="20" y="244" width="760" height="276" rx="10"/>
-  <text class="lt" x="34" y="262">for each clip</text>
+  <!-- conveyor -->
+  <rect class="belt" x="30" y="186" width="740" height="14" rx="7"/>
+  <path class="tread" d="M37,186 H763"/>
+  <g class="roll">
+    <circle cx="44" cy="193" r="4"/><circle cx="124" cy="193" r="4"/><circle cx="204" cy="193" r="4"/>
+    <circle cx="284" cy="193" r="4"/><circle cx="364" cy="193" r="4"/><circle cx="444" cy="193" r="4"/>
+    <circle cx="524" cy="193" r="4"/><circle cx="604" cy="193" r="4"/><circle cx="684" cy="193" r="4"/>
+    <circle cx="756" cy="193" r="4"/>
+  </g>
 
-  <!-- 4 -->
-  <rect class="box rec" x="30" y="272" width="345" height="62" rx="6"/>
-  <circle class="nb" cx="50" cy="292" r="10"/><text class="n" x="50" y="296" text-anchor="middle">4</text>
-  <text class="t" x="68" y="297">Seeks and sets the frame rate</text>
-  <text class="c" x="68" y="317">demo_gototick, host_framerate</text>
-  <path class="a" d="M375,303 L423,303"/>
+  <!-- frames on the belt; each turns from a game frame into raw video, then into a clip -->
+  <g transform="translate(79,186)">
+    <g class="f">
+      <g class="tga">
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="#7fa7cf"/>
+        <path d="M-21,-10 L-6,-16 L4,-12 L21,-18 L21,0 L-21,0 z" fill="#b08a5a"/>
+        <rect x="6" y="-22" width="10" height="12" fill="#d8c7a3"/>
+        <path d="M0,-18 V-10 M-4,-14 H4" stroke="#3ccf5a" stroke-width="1.6"/>
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="none" stroke="#1f2328" stroke-opacity=".35"/>
+      </g>
+      <g class="yuv">
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="#8250df"/>
+        <path d="M-21,-21 H21 M-21,-14 H21 M-21,-7 H21" stroke="#ffffff" stroke-opacity=".45" stroke-width="2"/>
+      </g>
+      <g class="mp4">
+        <rect x="-14" y="-20" width="28" height="20" rx="3" fill="#0969da"/>
+        <path d="M-4,-15 L-4,-5 L5,-10 z" fill="#ffffff"/>
+      </g>
+    </g>
+    <g class="f f1">
+      <g class="tga">
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="#7fa7cf"/>
+        <path d="M-21,-10 L-6,-16 L4,-12 L21,-18 L21,0 L-21,0 z" fill="#b08a5a"/>
+        <rect x="6" y="-22" width="10" height="12" fill="#d8c7a3"/>
+        <path d="M0,-18 V-10 M-4,-14 H4" stroke="#3ccf5a" stroke-width="1.6"/>
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="none" stroke="#1f2328" stroke-opacity=".35"/>
+      </g>
+      <g class="yuv">
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="#8250df"/>
+        <path d="M-21,-21 H21 M-21,-14 H21 M-21,-7 H21" stroke="#ffffff" stroke-opacity=".45" stroke-width="2"/>
+      </g>
+      <g class="mp4">
+        <rect x="-14" y="-20" width="28" height="20" rx="3" fill="#0969da"/>
+        <path d="M-4,-15 L-4,-5 L5,-10 z" fill="#ffffff"/>
+      </g>
+    </g>
+    <g class="f f2">
+      <g class="tga">
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="#7fa7cf"/>
+        <path d="M-21,-10 L-6,-16 L4,-12 L21,-18 L21,0 L-21,0 z" fill="#b08a5a"/>
+        <rect x="6" y="-22" width="10" height="12" fill="#d8c7a3"/>
+        <path d="M0,-18 V-10 M-4,-14 H4" stroke="#3ccf5a" stroke-width="1.6"/>
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="none" stroke="#1f2328" stroke-opacity=".35"/>
+      </g>
+      <g class="yuv">
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="#8250df"/>
+        <path d="M-21,-21 H21 M-21,-14 H21 M-21,-7 H21" stroke="#ffffff" stroke-opacity=".45" stroke-width="2"/>
+      </g>
+      <g class="mp4">
+        <rect x="-14" y="-20" width="28" height="20" rx="3" fill="#0969da"/>
+        <path d="M-4,-15 L-4,-5 L5,-10 z" fill="#ffffff"/>
+      </g>
+    </g>
+    <g class="f f3">
+      <g class="tga">
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="#7fa7cf"/>
+        <path d="M-21,-10 L-6,-16 L4,-12 L21,-18 L21,0 L-21,0 z" fill="#b08a5a"/>
+        <rect x="6" y="-22" width="10" height="12" fill="#d8c7a3"/>
+        <path d="M0,-18 V-10 M-4,-14 H4" stroke="#3ccf5a" stroke-width="1.6"/>
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="none" stroke="#1f2328" stroke-opacity=".35"/>
+      </g>
+      <g class="yuv">
+        <rect x="-21" y="-28" width="42" height="28" rx="2" fill="#8250df"/>
+        <path d="M-21,-21 H21 M-21,-14 H21 M-21,-7 H21" stroke="#ffffff" stroke-opacity=".45" stroke-width="2"/>
+      </g>
+      <g class="mp4">
+        <rect x="-14" y="-20" width="28" height="20" rx="3" fill="#0969da"/>
+        <path d="M-4,-15 L-4,-5 L5,-10 z" fill="#ffffff"/>
+      </g>
+    </g>
+  </g>
 
-  <!-- 5 -->
-  <rect class="box cs2" x="425" y="272" width="345" height="82" rx="6"/>
-  <circle class="ny" cx="445" cy="292" r="10"/><text class="n" x="445" y="296" text-anchor="middle">5</text>
-  <text class="t" x="463" y="297">startmovie: renders every frame</text>
-  <text class="s" x="463" y="317">at its own pace, so any GPU makes the same clip</text>
-  <text class="c" x="463" y="337">TGA frames in RAM (/dev/shm) + WAV</text>
-  <path class="a" d="M425,330 L377,388"/>
-
-  <!-- 6 -->
-  <rect class="box rec" x="30" y="364" width="345" height="62" rx="6"/>
-  <circle class="nb" cx="50" cy="384" r="10"/><text class="n" x="50" y="388" text-anchor="middle">6</text>
-  <text class="t" x="68" y="389">Converts frames as they arrive</text>
-  <text class="s" x="68" y="409">TGA → raw video; endmovie at the last frame needed</text>
-  <path class="a" d="M203,426 L203,446"/>
-
-  <!-- 7 -->
-  <rect class="box rec" x="30" y="448" width="345" height="62" rx="6"/>
-  <circle class="nb" cx="50" cy="468" r="10"/><text class="n" x="50" y="472" text-anchor="middle">7</text>
-  <text class="t" x="68" y="473">Edits and encodes the clip, with CS2's audio</text>
-  <text class="s" x="68" y="493">AV1, else H.265, else H.264, by what the GPU has</text>
-  <path class="a" d="M203,510 L203,554"/>
-
-  <!-- 8 -->
-  <rect class="box rec" x="30" y="556" width="345" height="62" rx="6"/>
-  <circle class="nb" cx="50" cy="576" r="10"/><text class="n" x="50" y="580" text-anchor="middle">8</text>
-  <text class="t" x="68" y="581">Uploads the MP4s, restores gameinfo.gi</text>
-  <text class="s" x="68" y="601">also after a crash, on the next start</text>
+  <text class="s" x="400" y="232" text-anchor="middle">Each frame takes as long as the GPU needs, so a slow GPU makes the same clip as a fast one. It just takes longer.</text>
+  <text class="s" x="400" y="250" text-anchor="middle">60, 120 or 240 fps, slow motion included.</text>
 </svg>
