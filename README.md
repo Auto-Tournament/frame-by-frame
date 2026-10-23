@@ -35,7 +35,7 @@ It makes exactly one call: `ICvar::StripDevelopmentFlags()`, CS2's own function 
 
 ## Install
 
-The Auto Tournament recorder will install and update Frame by Frame on its own (in progress). To try it by hand, put a release's `frame-by-frame` folder in `game/csgo/`, add the line from step 1 to `gameinfo.gi` and start CS2 with `-insecure`.
+The Auto Tournament recorder installs Frame by Frame on its own (in progress). To try it by hand, put a release's `frame-by-frame` folder in `game/csgo/`, add the line from step 1 to `gameinfo.gi` and start CS2 with `-insecure`.
 
 ## Build
 
@@ -51,6 +51,8 @@ The plugin is `build/libserver.so`.
 ## Credits
 
 Frame by Frame is inspired by the CS2 plugin in [CS Demo Manager](https://github.com/akiver/cs-demo-manager) by AkiVer, which showed that `startmovie` can be unlocked for frame-exact demo exports. Frame by Frame is our own code, written from scratch. None of CS Demo Manager's code is used.
+
+Thanks to DaalbuCZ for trying CS Demo Manager's plugin with the Auto Tournament recorder ([#1054](https://github.com/Auto-Tournament/auto-tournament/pull/1054), [#1269](https://github.com/Auto-Tournament/auto-tournament/pull/1269)), which showed the edge cases a native recorder has to handle, like a `gameinfo.gi` left behind after a crash.
 
 ## Contributing
 
