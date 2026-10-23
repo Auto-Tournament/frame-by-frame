@@ -18,14 +18,18 @@ RIDE = 0.45        # s along a belt
 CONV = 1.0         # s Convert works on one frame
 FIRST = 1.2        # the first frame leaves CS2
 
-# where things are (centres of a frame card)
-CS2_OUT, RAM_IN = (366, 133), (414, 133)
+# where things are (centres of a frame card); seen from above, a piece rides on the belt's centre line
+BELT_Y = 151
+CS2_OUT, RAM_IN = (366, BELT_Y), (414, BELT_Y)
 QUEUE_Y, QUEUE_X0, QUEUE_DX = 158, 562, 27   # slot 0 (next out) is the rightmost
-CONV_IN, CONV_END, CONV_AT = (600, 133), (652, 133), (752, 158)
+CONV_IN, CONV_END, CONV_AT = (600, BELT_Y), (652, BELT_Y), (752, 158)
 CHUTE_TOP, BASKET_Y = (768, 222), 300
 BASKET_X = [748, 786, 822, 762, 806]
 STACK_X, STACK_Y0, STACK_DY = 947, 300, 13
-CLIP_FROM, CLIP_TO = (1078, 133), (1160, 168)
+CLIP_FROM, CLIP_TO = (1078, BELT_Y), (1160, 168)
+# belts, and the audio along its belt, run as fast as the pieces ride
+SPEED = (RAM_IN[0] - CS2_OUT[0]) / RIDE   # px/s
+DASH = 16                                 # px between treads
 
 
 def simulate():
@@ -121,11 +125,14 @@ def css():
     out.append(flash("emit", [(F[k]["emit"] - .15, F[k]["emit"] + .1) for k in range(N)]))
     out.append(flash("enc", [(ENC, OUT)]))
     out.append(flash("play", [(ARRIVE, T - .2)]))
-    out.append(keyframes("seek", [(0, "opacity: 0; " + at(186, 133)), (.15, "opacity: 1; " + at(186, 133)),
-                                  (.75, "opacity: 1; " + at(214, 133)), (.9, "opacity: 0; " + at(218, 133))]))
+    out.append(keyframes("seek", [(0, "opacity: 0; " + at(186, BELT_Y)), (.15, "opacity: 1; " + at(186, BELT_Y)),
+                                  (.75, "opacity: 1; " + at(214, BELT_Y)), (.9, "opacity: 0; " + at(218, BELT_Y))]))
     out.append(keyframes("clip", [(0, "opacity: 0; " + at(*CLIP_FROM)), (OUT - .01, "opacity: 0; " + at(*CLIP_FROM)),
                                   (OUT, "opacity: 1; " + at(*CLIP_FROM)), (ARRIVE, "opacity: 1; " + at(*CLIP_TO)),
                                   (T - .2, "opacity: 1; " + at(*CLIP_TO)), (T, "opacity: 0; " + at(*CLIP_TO))]))
+    run = DASH / SPEED
+    out.append(f"@keyframes belt {{ to {{ stroke-dashoffset: -{DASH}; }} }} @keyframes beltv {{ to {{ stroke-dashoffset: {DASH}; }} }}")
+    out.append(f".tread, .audio {{ animation: belt {run:.3f}s linear infinite; }} .treadv {{ animation-name: beltv; }}")
     out.append(f".stop {{ animation: stop {T}s linear infinite; }} .go {{ animation: go {T}s linear infinite; }}")
     out.append(f".emit {{ animation: emit {T}s linear infinite; }} .enc {{ animation: enc {T}s linear infinite; }}")
     out.append(f".playon {{ animation: play {T}s linear infinite; }}")
@@ -140,8 +147,7 @@ STYLE = """
     .box { fill: #ffffff; stroke: #1d1d1f; stroke-width: 1.5; }
     .hot { stroke: #2f6bff; }
     .belt { fill: #eceef2; stroke: #1d1d1f; stroke-width: 1.5; }
-    .tread { fill: none; stroke: #1d1d1f; stroke-opacity: .28; stroke-dasharray: 2 6; animation: belt .3s linear infinite; }
-    .treadv { animation-name: beltv; }
+    .tread { fill: none; stroke: #1d1d1f; stroke-opacity: .28; stroke-dasharray: 4 12; }
     .slot { fill: none; stroke: #939291; stroke-dasharray: 3 3; }
     .h { fill: #1d1d1f; font-size: 13px; font-weight: 700; }
     .s { fill: #5d5b5b; font-size: 10px; }
@@ -156,7 +162,7 @@ STYLE = """
     .basket { fill: none; stroke: #1d1d1f; stroke-width: 1.5; }
     .hatch { stroke: #dcdfe5; }
     .wave { fill: none; stroke: #2f6bff; stroke-width: 1.6; }
-    .audio { fill: none; stroke: #2f6bff; stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; animation: flow .5s linear infinite; }
+    .audio { fill: none; stroke: #2f6bff; stroke-width: 2; stroke-dasharray: 3 13; stroke-linecap: round; }
     .glow { fill: url(#glow); }
     @media (prefers-color-scheme: dark) {
       .bg { fill: #131315; }
@@ -177,9 +183,6 @@ STYLE = """
       .basket { stroke: #c7c4c3; }
       .hatch { stroke: #282828; }
     }
-    @keyframes belt { to { stroke-dashoffset: -8; } }
-    @keyframes beltv { to { stroke-dashoffset: 8; } }
-    @keyframes flow { to { stroke-dashoffset: -9; } }
 """
 
 
