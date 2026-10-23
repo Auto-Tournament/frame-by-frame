@@ -1,0 +1,108 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 640" width="800" height="640" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif">
+  <title>How a Frame by Frame recording works</title>
+  <style>
+    .bg { fill: #ffffff; }
+    .lane { fill: #f6f8fa; stroke: #d0d7de; }
+    .head { fill: #1f2328; font-size: 15px; font-weight: 600; }
+    .box { fill: #ffffff; stroke: #8c959f; stroke-width: 1.2; }
+    .rec { stroke: #0969da; }
+    .cs2 { stroke: #bf8700; }
+    .loop { fill: none; stroke: #8250df; stroke-dasharray: 6 4; stroke-width: 1.4; }
+    .t { fill: #1f2328; font-size: 13px; }
+    .s { fill: #59636e; font-size: 11.5px; }
+    .c { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 11.5px; fill: #59636e; }
+    .n { fill: #ffffff; font-size: 11px; font-weight: 700; }
+    .nb { fill: #0969da; }
+    .ny { fill: #bf8700; }
+    .lt { fill: #8250df; font-size: 11.5px; font-weight: 600; }
+    .a { stroke: #8c959f; stroke-width: 1.4; fill: none; marker-end: url(#arrow); }
+    .ah { fill: #8c959f; }
+    @media (prefers-color-scheme: dark) {
+      .bg { fill: #0d1117; }
+      .lane { fill: #151b23; stroke: #3d444d; }
+      .head, .t { fill: #f0f6fc; }
+      .box { fill: #0d1117; stroke: #656c76; }
+      .rec { stroke: #4493f8; }
+      .cs2 { stroke: #d29922; }
+      .loop { stroke: #ab7df8; }
+      .s, .c { fill: #9198a1; }
+      .n { fill: #0d1117; }
+      .nb { fill: #4493f8; }
+      .ny { fill: #d29922; }
+      .lt { fill: #ab7df8; }
+      .a { stroke: #656c76; }
+      .ah { fill: #656c76; }
+    }
+  </style>
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path class="ah" d="M0,0 L10,5 L0,10 z"/>
+    </marker>
+  </defs>
+
+  <rect class="bg" x="0" y="0" width="800" height="640"/>
+  <rect class="lane" x="10" y="10" width="385" height="620" rx="8"/>
+  <rect class="lane" x="405" y="10" width="385" height="620" rx="8"/>
+  <text class="head" x="30" y="38">Auto Tournament recorder</text>
+  <text class="head" x="425" y="38">CS2 with Frame by Frame</text>
+
+  <!-- 1 -->
+  <rect class="box rec" x="30" y="56" width="345" height="62" rx="6"/>
+  <circle class="nb" cx="50" cy="76" r="10"/><text class="n" x="50" y="80" text-anchor="middle">1</text>
+  <text class="t" x="68" y="81">Adds the plugin to gameinfo.gi</text>
+  <text class="c" x="68" y="101">Game csgo/frame-by-frame, then -insecure</text>
+  <path class="a" d="M375,87 L423,87"/>
+
+  <!-- 2 -->
+  <rect class="box cs2" x="425" y="56" width="345" height="62" rx="6"/>
+  <circle class="ny" cx="445" cy="76" r="10"/><text class="n" x="445" y="80" text-anchor="middle">2</text>
+  <text class="t" x="463" y="81">Checks StripDevelopmentFlags, calls it</text>
+  <text class="s" x="463" y="101">movie commands unhidden; no hooks, no patches</text>
+  <path class="a" d="M597,118 L597,140 L203,140 L203,156"/>
+
+  <!-- 3 -->
+  <rect class="box rec" x="30" y="158" width="345" height="62" rx="6"/>
+  <circle class="nb" cx="50" cy="178" r="10"/><text class="n" x="50" y="182" text-anchor="middle">3</text>
+  <text class="t" x="68" y="183">Plays the demo, checks the commands</text>
+  <text class="c" x="68" y="203">playdemo, then find startmovie</text>
+  <path class="a" d="M203,220 L203,262"/>
+
+  <!-- loop -->
+  <rect class="loop" x="20" y="244" width="760" height="276" rx="10"/>
+  <text class="lt" x="34" y="262">for each clip</text>
+
+  <!-- 4 -->
+  <rect class="box rec" x="30" y="272" width="345" height="62" rx="6"/>
+  <circle class="nb" cx="50" cy="292" r="10"/><text class="n" x="50" y="296" text-anchor="middle">4</text>
+  <text class="t" x="68" y="297">Seeks and sets the frame rate</text>
+  <text class="c" x="68" y="317">demo_gototick, host_framerate</text>
+  <path class="a" d="M375,303 L423,303"/>
+
+  <!-- 5 -->
+  <rect class="box cs2" x="425" y="272" width="345" height="82" rx="6"/>
+  <circle class="ny" cx="445" cy="292" r="10"/><text class="n" x="445" y="296" text-anchor="middle">5</text>
+  <text class="t" x="463" y="297">startmovie: renders every frame</text>
+  <text class="s" x="463" y="317">at its own pace, so any GPU makes the same clip</text>
+  <text class="c" x="463" y="337">TGA frames in RAM (/dev/shm) + WAV</text>
+  <path class="a" d="M425,330 L377,388"/>
+
+  <!-- 6 -->
+  <rect class="box rec" x="30" y="364" width="345" height="62" rx="6"/>
+  <circle class="nb" cx="50" cy="384" r="10"/><text class="n" x="50" y="388" text-anchor="middle">6</text>
+  <text class="t" x="68" y="389">Converts frames as they arrive</text>
+  <text class="s" x="68" y="409">TGA → raw video; endmovie at the last frame needed</text>
+  <path class="a" d="M203,426 L203,446"/>
+
+  <!-- 7 -->
+  <rect class="box rec" x="30" y="448" width="345" height="62" rx="6"/>
+  <circle class="nb" cx="50" cy="468" r="10"/><text class="n" x="50" y="472" text-anchor="middle">7</text>
+  <text class="t" x="68" y="473">Edits and encodes the clip, with CS2's audio</text>
+  <text class="s" x="68" y="493">AV1, else H.265, else H.264, by what the GPU has</text>
+  <path class="a" d="M203,510 L203,554"/>
+
+  <!-- 8 -->
+  <rect class="box rec" x="30" y="556" width="345" height="62" rx="6"/>
+  <circle class="nb" cx="50" cy="576" r="10"/><text class="n" x="50" y="580" text-anchor="middle">8</text>
+  <text class="t" x="68" y="581">Uploads the MP4s, restores gameinfo.gi</text>
+  <text class="s" x="68" y="601">also after a crash, on the next start</text>
+</svg>

@@ -28,14 +28,16 @@ It makes exactly one call: `ICvar::StripDevelopmentFlags()`, CS2's own function 
 
 ## How a recording works
 
+<p align="center"><img src=".github/flow.svg" alt="How a recording works: the recorder adds the plugin to gameinfo.gi, CS2 unhides the movie commands, and for each clip the recorder seeks, CS2 renders every frame, and the recorder converts and encodes them" width="800" /></p>
+
 1. The recorder adds `Game csgo/frame-by-frame` above `Game csgo` in `gameinfo.gi` and starts CS2 with `-insecure`.
 2. The game console shows `[Frame by Frame] movie commands unhidden`.
 3. Over the console, the recorder plays the demo, seeks with `demo_gototick <tick> 0 1`, sets `host_framerate`, runs `startmovie <name> tga wav` and resumes. At the end tick it runs `endmovie` (`demo_pauseatservertick` can pause there).
-4. TGA frames land in `csgo/frame-by-frame/movie/<date>/` and the WAV in `csgo/movie/<date>/`.
+4. TGA frames land in `csgo/frame-by-frame/movie/<date>/` and the WAV in `csgo/movie/<date>/`. The recorder points the frame folder at RAM (`/dev/shm`) when it can, converts frames as they arrive and runs `endmovie` at the last frame the clip needs.
 
 ## Install
 
-The Auto Tournament recorder installs Frame by Frame on its own (in progress). To try it by hand, put a release's `frame-by-frame` folder in `game/csgo/`, add the line from step 1 to `gameinfo.gi` and start CS2 with `-insecure`.
+The Auto Tournament recorder installs Frame by Frame on its own and records with it by default. To try it by hand, put a release's `frame-by-frame` folder in `game/csgo/`, add the line from step 1 to `gameinfo.gi` and start CS2 with `-insecure`.
 
 ## Build
 
