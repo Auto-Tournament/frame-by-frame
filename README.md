@@ -28,7 +28,7 @@ It makes exactly one call: `ICvar::StripDevelopmentFlags()`, CS2's own function 
 
 ## How a recording works
 
-<p align="center"><img src=".github/flow.svg" alt="Animation, seen from above: CS2 renders frames onto a conveyor, past RAM and conversion, into the encoder's basket; once a clip's frames are in, the encoder turns them and the game audio into one MP4" width="800" /></p>
+<p align="center"><img src=".github/flow.svg" alt="Animation: the recorder sends CS2 its commands; CS2 hands each frame to RAM, which queues them; Convert takes them one by one, with a STOP and GO light, and drops each into a basket; Encode adds each to the end of its stack and, once the clip is complete, sends one MP4 to the platform. Game audio has its own belt from CS2 to the encoder." width="800" /></p>
 
 1. The recorder adds `Game csgo/frame-by-frame` above `Game csgo` in `gameinfo.gi` and starts CS2 with `-insecure`.
 2. The game console shows `[Frame by Frame] movie commands unhidden`.

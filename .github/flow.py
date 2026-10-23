@@ -1,234 +1,287 @@
-"""Generates .github/flow.svg, the README animation: a top-down frame factory.
+"""Generates .github/flow.svg, the README animation: who hands what to whom.
 
   python3 .github/flow.py .github/flow.svg
 
-One 9 s loop: CS2 drops five frames on the belt, 1 s apart. Each rides past RAM and Convert
-(where it turns into raw video) into the encoder's basket and stacks up. When all five are in,
-the encoder works, takes the stack and puts out one MP4 clip, which slides into the tray.
+A belt between every pair of processes. The recorder sends CS2 its commands; CS2 renders a
+frame at a time onto the belt to RAM, which queues them; Convert takes them one by one (its
+light shows STOP while it works, GO when it's ready for the next) and drops each into a
+basket; Encode picks each out and adds it to the end of the clip's stack. When the clip's
+frames are all in, Encode puts out one MP4 for the platform. Game audio has its own belt.
+
+The timings are simulated below, so edit this script, not the SVG.
 """
 import sys
 
-T = 9.0           # loop length, s
-N = 5             # frames per clip
-RIDE = 3.5        # s from CS2 to the basket
-X0, XB = 120, 640  # CS2 station, basket centre
-DX = XB - X0
-RAM_X, CONV_X = 290, 460
-ENC_AT, OUT_AT = 7.6, 8.1  # encoder starts; the clip comes out
+N = 5              # frames in the clip
+RENDER = 0.75      # s between frames out of CS2: faster than Convert, so RAM queues
+RIDE = 0.45        # s along a belt
+CONV = 1.0         # s Convert works on one frame
+FIRST = 1.2        # the first frame leaves CS2
+
+# where things are (centres of a frame card)
+CS2_OUT, RAM_IN = (366, 133), (414, 133)
+QUEUE_Y, QUEUE_X0, QUEUE_DX = 158, 562, 27   # slot 0 (next out) is the rightmost
+CONV_IN, CONV_END, CONV_AT = (600, 133), (652, 133), (752, 158)
+CHUTE_TOP, BASKET_Y = (768, 222), 300
+BASKET_X = [748, 786, 822, 762, 806]
+STACK_X, STACK_Y0, STACK_DY = 947, 300, 13
+CLIP_FROM, CLIP_TO = (1078, 133), (1160, 168)
+
+
+def simulate():
+    frames, conv_free = [], 0.0
+    for k in range(N):
+        emit = FIRST + k * RENDER
+        queued = emit + RIDE + .2
+        start = max(queued, conv_free)
+        at_conv = start + .2 + RIDE + .2
+        done = at_conv + CONV
+        conv_free = done + .2
+        landed = conv_free + .35
+        picked = landed + .45
+        stacked = picked + .45
+        frames.append(dict(emit=emit, queued=queued, start=start, at_conv=at_conv, done=done,
+                           chute=conv_free, landed=landed, picked=picked, stacked=stacked))
+    return frames
+
+
+F = simulate()
+ENC = F[-1]["stacked"] + .25          # the encoder starts on the whole clip
+OUT = ENC + .9                        # the MP4 comes out
+ARRIVE = OUT + .7                     # it reaches the platform
+T = round(ARRIVE + 1.3, 2)            # one loop
 
 
 def pc(t):
-    return f"{100 * t / T:.2f}%"
+    return f"{100 * min(max(t, 0), T) / T:.3f}%"
+
+
+def keyframes(name, pts):
+    """pts: [(t, css)], held between points; the first and last are held to 0% and 100%."""
+    pts = sorted(pts, key=lambda p: p[0])
+    body = [f"0% {{ {pts[0][1]} }}"] + [f"{pc(t)} {{ {css} }}" for t, css in pts] + [f"100% {{ {pts[-1][1]} }}"]
+    return f"@keyframes {name} {{ {' '.join(body)} }}"
+
+
+def at(x, y):
+    return f"transform: translate({x}px, {y}px);"
+
+
+def queue_slot(k, t):
+    """frame k's place in RAM's queue at time t: how many earlier frames are still waiting."""
+    return sum(1 for j in range(k) if F[j]["queued"] <= t < F[j]["start"])
 
 
 def frame_css(k):
-    t0 = k * 1.0
-    arrive = t0 + RIDE
-    sx, sy = k * 3, -k * 3  # its place in the stack
-    conv = t0 + RIDE * (CONV_X - X0) / DX
-    k_ride = f"""
-    @keyframes ride{k} {{
-      0%, {pc(t0)} {{ transform: translate(0, -22px); opacity: 0; }}
-      {pc(t0 + .3)} {{ transform: translate({DX * .3 / RIDE:.1f}px, 0); opacity: 1; }}
-      {pc(arrive)} {{ transform: translate({DX}px, 0); opacity: 1; }}
-      {pc(arrive + .2)}, {pc(OUT_AT - .1)} {{ transform: translate({DX + sx}px, {sy}px); opacity: 1; }}
-      {pc(OUT_AT + .2)}, 100% {{ transform: translate({DX + 80}px, 0) scale(.4); opacity: 0; }}
-    }}
-    @keyframes tga{k} {{ 0%, {pc(conv)} {{ opacity: 1; }} {pc(conv + .01)}, 100% {{ opacity: 0; }} }}
-    @keyframes raw{k} {{ 0%, {pc(conv)} {{ opacity: 0; }} {pc(conv + .01)}, 100% {{ opacity: 1; }} }}
-    .f{k} {{ animation: ride{k} {T}s linear infinite; }}
-    .f{k} .tga {{ animation: tga{k} {T}s linear infinite; }}
-    .f{k} .raw {{ animation: raw{k} {T}s linear infinite; }}"""
-    return k_ride
+    f = F[k]
+    pos = [(f["emit"], at(*CS2_OUT)), (f["emit"] + RIDE, at(*RAM_IN)),
+           (f["queued"], at(QUEUE_X0 - QUEUE_DX * queue_slot(k, f["queued"]), QUEUE_Y))]
+    # shuffle right as earlier frames leave the queue
+    for j in range(k):
+        m = F[j]["start"]
+        if f["queued"] < m < f["start"]:
+            pos.append((m, at(QUEUE_X0 - QUEUE_DX * queue_slot(k, m - .01), QUEUE_Y)))
+            pos.append((m + .2, at(QUEUE_X0 - QUEUE_DX * queue_slot(k, m + .01), QUEUE_Y)))
+    pos.append((f["start"], at(QUEUE_X0, QUEUE_Y)))
+    pos += [(f["start"] + .2, at(*CONV_IN)), (f["start"] + .2 + RIDE, at(*CONV_END)),
+            (f["at_conv"], at(*CONV_AT)), (f["done"], at(*CONV_AT)),
+            (f["chute"], at(*CHUTE_TOP)), (f["landed"], at(BASKET_X[k], BASKET_Y)),
+            (f["picked"], at(BASKET_X[k], BASKET_Y)), (f["stacked"], at(STACK_X, STACK_Y0 - STACK_DY * k)),
+            (OUT, at(STACK_X, STACK_Y0 - STACK_DY * k))]
+    vis = [(0, "opacity: 0;"), (f["emit"], "opacity: 0;"), (f["emit"] + .1, "opacity: 1;"),
+           (OUT - .3, "opacity: 1;"), (OUT, "opacity: 0;")]
+    tga = [(0, "opacity: 1;"), (f["done"] - .01, "opacity: 1;"), (f["done"], "opacity: 0;")]
+    raw = [(0, "opacity: 0;"), (f["done"] - .01, "opacity: 0;"), (f["done"], "opacity: 1;"),
+           (f["stacked"] - .01, "opacity: 1;"), (f["stacked"], "opacity: 0;")]
+    bar = [(0, "opacity: 0;"), (f["stacked"] - .01, "opacity: 0;"), (f["stacked"], "opacity: 1;")]
+    return "\n    ".join([
+        keyframes(f"p{k}", pos), keyframes(f"v{k}", vis),
+        keyframes(f"t{k}", tga), keyframes(f"r{k}", raw), keyframes(f"b{k}", bar),
+        f".f{k} {{ animation: p{k} {T}s linear infinite; }}",
+        f".f{k} > g {{ animation: v{k} {T}s linear infinite; }}",
+        f".f{k} .tga {{ animation: t{k} {T}s linear infinite; }}",
+        f".f{k} .raw {{ animation: r{k} {T}s linear infinite; }}",
+        f".f{k} .bar {{ animation: b{k} {T}s linear infinite; }}",
+    ])
 
 
-def flashes(name, times):
-    """keyframes that flash on at each time for 0.25 s."""
-    steps = ["0% { opacity: 0; }"]
-    for t in times:
-        steps.append(f"{pc(t)} {{ opacity: 1; }} {pc(t + .25)} {{ opacity: 0; }}")
-    steps.append("100% { opacity: 0; }")
-    return f"@keyframes {name} {{ {' '.join(steps)} }}"
+def flash(name, spans, on="opacity: 1;", off="opacity: 0;"):
+    pts = [(0, off)]
+    for a, b in spans:
+        pts += [(a - .01, off), (a, on), (b, on), (b + .01, off)]
+    return keyframes(name, pts)
 
 
 def css():
     out = [frame_css(k) for k in range(N)]
-    out.append(flashes("lamp1", [k * 1.0 for k in range(N)]))
-    out.append(flashes("lamp2", [k + RIDE * (RAM_X - X0) / DX for k in range(N)]))
-    out.append(flashes("lamp3", [k + RIDE * (CONV_X - X0) / DX for k in range(N)]))
-    # the encoder's gauge: one step per frame in the basket
-    g = ["0% { transform: scaleX(0); }"]
-    for k in range(N):
-        a = k + RIDE
-        g.append(f"{pc(a)} {{ transform: scaleX({k / N:.2f}); }} {pc(a + .15)} {{ transform: scaleX({(k + 1) / N:.2f}); }}")
-    g.append(f"{pc(OUT_AT)} {{ transform: scaleX(1); }} {pc(OUT_AT + .3)}, 100% {{ transform: scaleX(0); }}")
-    out.append(f"@keyframes gauge {{ {' '.join(g)} }}")
-    out.append(f"@keyframes work {{ 0%, {pc(ENC_AT)} {{ opacity: 0; }} {pc(ENC_AT + .05)}, {pc(OUT_AT + .1)} {{ opacity: 1; }} {pc(OUT_AT + .2)}, 100% {{ opacity: 0; }} }}")
-    out.append(f"""@keyframes eject {{
-      0%, {pc(OUT_AT)} {{ transform: translate(0, 0); opacity: 0; }}
-      {pc(OUT_AT + .1)} {{ opacity: 1; }}
-      {pc(T - .3)} {{ transform: translate(52px, 0); opacity: 1; }}
-      100% {{ transform: translate(52px, 0); opacity: 0; }}
-    }}""")
-    out.append(f"@keyframes rec {{ 0%, {pc(N)} {{ opacity: 1; }} {pc(N + .01)}, 100% {{ opacity: .15; }} }}")
-    return "\n".join(out)
-
-
-def frame(k):
-    return f'''<g class="f f{k}">
-      <ellipse class="glow" rx="38" ry="24"/>
-      <g class="tga"><rect class="card" x="-20" y="-14" width="40" height="28" rx="2"/><path class="thin" d="M-16,8 L-6,3 L2,6 L16,-2 M8,-10 v8 M4,-6 h8"/></g>
-      <g class="raw"><rect class="card" x="-20" y="-14" width="40" height="28" rx="2"/><path class="thin" d="M-15,-7 H15 M-15,0 H15 M-15,7 H15"/></g>
-    </g>'''
+    out.append(flash("stop", [(F[k]["at_conv"], F[k]["done"]) for k in range(N)]))
+    go = [(0, F[0]["at_conv"] - .02)] + [(F[k]["done"] + .02, F[k + 1]["at_conv"] - .02) for k in range(N - 1)]
+    go.append((F[-1]["done"] + .02, T - .02))
+    out.append(flash("go", go))
+    out.append(flash("emit", [(F[k]["emit"] - .15, F[k]["emit"] + .1) for k in range(N)]))
+    out.append(flash("enc", [(ENC, OUT)]))
+    out.append(flash("play", [(ARRIVE, T - .2)]))
+    out.append(keyframes("seek", [(0, "opacity: 0; " + at(186, 133)), (.15, "opacity: 1; " + at(186, 133)),
+                                  (.75, "opacity: 1; " + at(214, 133)), (.9, "opacity: 0; " + at(218, 133))]))
+    out.append(keyframes("clip", [(0, "opacity: 0; " + at(*CLIP_FROM)), (OUT - .01, "opacity: 0; " + at(*CLIP_FROM)),
+                                  (OUT, "opacity: 1; " + at(*CLIP_FROM)), (ARRIVE, "opacity: 1; " + at(*CLIP_TO)),
+                                  (T - .2, "opacity: 1; " + at(*CLIP_TO)), (T, "opacity: 0; " + at(*CLIP_TO))]))
+    out.append(f".stop {{ animation: stop {T}s linear infinite; }} .go {{ animation: go {T}s linear infinite; }}")
+    out.append(f".emit {{ animation: emit {T}s linear infinite; }} .enc {{ animation: enc {T}s linear infinite; }}")
+    out.append(f".playon {{ animation: play {T}s linear infinite; }}")
+    out.append(f".seek {{ animation: seek {T}s linear infinite; }} .clipm {{ animation: clip {T}s linear infinite; }}")
+    return "\n    ".join(out)
 
 
 STYLE = """
     /* Auto Tournament's Ember palette: dark first, a warm light version for light mode */
     .bg { fill: #faf6f4; }
     .dot { fill: #e6dcd8; }
-    .ln, .m, .slot, .scr, .card, .clip, .arm, .tray, .roll, .stick, .belt { stroke: #2a2220; stroke-width: 1.2; stroke-linejoin: round; }
-    .m, .scr, .slot, .card, .clip { fill: #ffffff; }
-    .stick, .arm, .tray, .roll, .belt { fill: #f1e9e6; }
-    .tread { stroke: #2a2220; stroke-opacity: .3; stroke-width: 44; stroke-dasharray: 1.2 10.8; fill: none; animation: belt .08s linear infinite; }
-    .thin { fill: none; stroke: #2a2220; stroke-width: 1; stroke-linecap: round; }
-    .t { fill: #2a2220; font-size: 12px; font-weight: 700; letter-spacing: 1px; }
-    .s { fill: #6b625f; font-size: 10.5px; }
-    .k { fill: #2a2220; font-size: 9px; }
-    .num { fill: #ffffff; font-size: 10px; font-weight: 700; }
-    .badge, .acc { fill: #d1512c; }
-    .pipe { fill: none; stroke: #e6dcd8; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round; }
-    .audio { fill: none; stroke: #d1512c; stroke-width: 2; stroke-dasharray: 2 8; stroke-linecap: round; animation: flow .5s linear infinite; }
-    .ledo, .gbg { fill: #e6dcd8; }
-    .play { fill: #d1512c; }
+    .box { fill: #ffffff; stroke: #2a2220; stroke-width: 1.5; }
+    .hot { stroke: #d1512c; }
+    .belt { fill: #f1e9e6; stroke: #2a2220; stroke-width: 1.5; }
+    .tread { fill: none; stroke: #2a2220; stroke-opacity: .28; stroke-dasharray: 2 6; animation: belt .3s linear infinite; }
+    .treadv { animation-name: beltv; }
+    .slot { fill: none; stroke: #b9aca7; stroke-dasharray: 3 3; }
+    .h { fill: #2a2220; font-size: 13px; font-weight: 700; }
+    .s { fill: #6b625f; font-size: 10px; }
+    .x { fill: #2a2220; font-size: 9px; }
+    .acc { fill: #d1512c; }
+    .acct { fill: #d1512c; font-size: 9px; }
+    .chip { fill: none; stroke: #b9aca7; } .chipa { fill: none; stroke: #d1512c; }
+    .lamp { fill: #e6dcd8; } .red { fill: #d93a32; } .grn { fill: #1f9d4c; }
+    .tga1 { fill: #6f93b8; } .tga2 { fill: #9b7a52; } .edge { fill: none; stroke: #2a2220; stroke-width: 1; }
+    .rawf { fill: #ffffff; } .rawl { stroke: #d1512c; stroke-width: 1.6; }
+    .barf { fill: #f1e9e6; stroke: #2a2220; stroke-width: 1; }
+    .basket { fill: none; stroke: #2a2220; stroke-width: 1.5; }
+    .hatch { stroke: #e6dcd8; }
+    .wave { fill: none; stroke: #d1512c; stroke-width: 1.6; }
+    .audio { fill: none; stroke: #d1512c; stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; animation: flow .5s linear infinite; }
     .glow { fill: url(#glow); }
-    .rec { fill: #1f9d4c; }
     @media (prefers-color-scheme: dark) {
       .bg { fill: #100908; }
-      .dot { fill: #322926; }
-      .ln, .m, .slot, .scr, .card, .clip, .arm, .tray, .roll, .stick, .belt { stroke: #c4bcb9; stroke-opacity: .85; }
-      .m, .scr, .slot, .card, .clip { fill: #100908; }
-      .stick, .arm, .tray, .roll, .belt { fill: #18110e; }
-      .tread, .thin { stroke: #c4bcb9; }
-      .t, .k { fill: #f4edeb; }
+      .dot { fill: #2a211e; }
+      .box { fill: #18110e; stroke: #c4bcb9; }
+      .hot { stroke: #ff6a3d; }
+      .edge { stroke: #c4bcb9; }
+      .belt { fill: #211815; stroke: #c4bcb9; }
+      .tread { stroke: #c4bcb9; }
+      .slot, .chip { stroke: #4d4442; }
+      .h, .x { fill: #f4edeb; }
       .s { fill: #938a87; }
-      .badge, .acc, .play { fill: #ff6a3d; }
-      .num { fill: #140e0c; }
-      .pipe { stroke: #211815; }
-      .audio { stroke: #ff6a3d; }
-      .ledo, .gbg { fill: #322926; }
-      .rec { fill: #3fc168; }
+      .acc, .acct { fill: #ff6a3d; }
+      .chipa, .rawl, .wave, .audio { stroke: #ff6a3d; }
+      .lamp { fill: #2a1d1b; } .red { fill: #f2645f; } .grn { fill: #3fc168; }
+      .rawf { fill: #211815; }
+      .barf { fill: #211815; stroke: #c4bcb9; }
+      .basket { stroke: #c4bcb9; }
+      .hatch { stroke: #211815; }
     }
-    @keyframes belt { to { stroke-dashoffset: -12; } }
-    @keyframes flow { to { stroke-dashoffset: -10; } }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .dial { transform-box: fill-box; transform-origin: center; animation: spin 3s linear infinite; }
-    .lamp1, .lamp2, .lamp3 { opacity: 0; }
-    .lamp1 { animation: lamp1 9s linear infinite; } .lamp2 { animation: lamp2 9s linear infinite; } .lamp3 { animation: lamp3 9s linear infinite; }
-    .gauge { transform-box: fill-box; transform-origin: left; transform: scaleX(0); animation: gauge 9s linear infinite; }
-    .work { opacity: 0; animation: work 9s linear infinite; }
-    .eject { opacity: 0; animation: eject 9s linear infinite; }
-    .rec { animation: rec 9s steps(1) infinite; }
+    @keyframes belt { to { stroke-dashoffset: -8; } }
+    @keyframes beltv { to { stroke-dashoffset: 8; } }
+    @keyframes flow { to { stroke-dashoffset: -9; } }
 """
 
 
+def box(x, y, w, h, hot=False):
+    return f'<rect class="box{" hot" if hot else ""}" x="{x}" y="{y}" width="{w}" height="{h}" rx="10"/>'
+
+
+def hbelt(x, y, w, h=18):
+    return (f'<rect class="belt" x="{x}" y="{y}" width="{w}" height="{h}"/>'
+            f'<path class="tread" stroke-width="{h - 4}" d="M{x},{y + h / 2} H{x + w}"/>')
+
+
+def vbelt(x, y, h, w=16):
+    return (f'<rect class="belt" x="{x}" y="{y}" width="{w}" height="{h}"/>'
+            f'<path class="tread treadv" stroke-width="{w - 4}" d="M{x + w / 2},{y} V{y + h}"/>')
+
+
+def card():
+    return ('<g class="tga"><rect class="tga1" x="-11" y="-8" width="22" height="9"/><rect class="tga2" x="-11" y="1" width="22" height="7"/>'
+            '<rect class="edge" x="-11" y="-8" width="22" height="16" rx="1.5"/></g>'
+            '<g class="raw"><rect class="rawf" x="-11" y="-8" width="22" height="16" rx="1.5"/>'
+            '<path class="rawl" d="M-8,-4 H8 M-8,0 H8 M-8,4 H8"/><rect class="edge" x="-11" y="-8" width="22" height="16" rx="1.5"/></g>'
+            '<g class="bar"><rect class="barf" x="-30" y="-5" width="60" height="10" rx="2"/></g>')
+
+
+def label(x, y, text, cls="s", anchor="middle"):
+    return f'<text class="{cls}" x="{x}" y="{y}" text-anchor="{anchor}">{text}</text>'
+
+
 def svg():
-    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 290" width="900" height="290" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
-  <title>Frame by Frame: CS2 renders each frame; the frames are collected, then encoded into one clip</title>
-  <!-- generated by .github/flow.py: one 9 s loop, five frames make one clip -->
-  <style>{STYLE}{css()}
-    @media (prefers-reduced-motion: reduce) {{ * {{ animation: none !important; }} .f, .eject, .work {{ opacity: 0; }} }}
+    o = []
+    # belts first, so the boxes sit over their ends
+    o.append(hbelt(170, 142, 60) + label(200, 118, "commands", "x"))
+    o.append(hbelt(360, 142, 60) + label(390, 118, "a frame", "x"))
+    o.append(hbelt(590, 142, 70) + label(625, 118, "one by one", "x"))
+    o.append(vbelt(760, 206, 54))
+    o.append(hbelt(1070, 142, 40) + label(1090, 118, "mp4", "acct"))
+    # audio: CS2 down, along the bottom, up into Encode
+    o.append(vbelt(287, 206, 150) + hbelt(287, 356, 700, 16) + vbelt(971, 326, 30))
+    o.append('<path class="audio" d="M295,206 V364 H979 V326"/>')
+    o.append('<path class="wave" d="M330,344 C333,337 335,337 338,344 S343,351 346,344 S351,337 354,344 S359,351 362,344"/>')
+    o.append(label(370, 347, "game audio (WAV), from CS2 to the encoder", "acct", "start"))
+
+    o.append(box(40, 96, 130, 110) + label(52, 118, "RECORDER", "h", "start")
+             + label(52, 138, "drives the game", "s", "start") + label(52, 152, "over its console", "s", "start"))
+    o.append(box(230, 96, 130, 110) + label(242, 118, "CS2", "h", "start")
+             + label(242, 138, "renders one frame", "s", "start") + label(242, 152, "at a time, at its", "s", "start")
+             + label(242, 166, "own pace", "s", "start")
+             + '<circle class="lamp" cx="344" cy="114" r="4"/><circle class="grn emit" cx="344" cy="114" r="4"/>')
+    o.append(box(420, 96, 170, 110) + label(432, 118, "RAM", "h", "start") + label(432, 190, "queue · oldest out first", "s", "start"))
+    o += [f'<rect class="slot" x="{QUEUE_X0 - QUEUE_DX * i - 11}" y="{QUEUE_Y - 8}" width="22" height="16" rx="1.5"/>' for i in range(5)]
+    o.append(box(660, 96, 150, 110) + label(700, 118, "CONVERT", "h", "start") + label(700, 138, "TGA to", "s", "start")
+             + label(700, 152, "raw video", "s", "start"))
+    o.append('<rect class="box" x="668" y="104" width="24" height="58" rx="6"/>'
+             '<circle class="lamp" cx="680" cy="121" r="6"/><circle class="red stop" cx="680" cy="121" r="6"/>'
+             '<circle class="lamp" cx="680" cy="145" r="6"/><circle class="grn go" cx="680" cy="145" r="6"/>')
+    o.append(label(680, 178, "STOP·GO", "x"))
+    # the basket
+    o.append('<path class="basket" d="M720,256 V312 Q720,326 734,326 H846 Q860,326 860,312 V256"/>')
+    o += [f'<path class="hatch" d="M{x},258 L{x + 60},322"/>' for x in range(722, 800, 14)]
+    o.append(label(790, 342, "basket of raw frames"))
+    # the encoder
+    o.append(box(900, 96, 170, 230, hot=True) + label(912, 118, "ENCODE", "h", "start"))
+    o.append('<rect class="chipa" x="912" y="128" width="30" height="16" rx="3"/><rect class="acc enc" x="912" y="128" width="30" height="16" rx="3" opacity=".35"/>'
+             '<rect class="chip" x="946" y="128" width="40" height="16" rx="3"/><rect class="chip" x="990" y="128" width="40" height="16" rx="3"/>'
+             + label(927, 139, "AV1", "acct") + label(966, 139, "H.265", "s") + label(1010, 139, "H.264", "s"))
+    o.append(label(912, 166, "the clip so far", "s", "start"))
+    o.append(label(985, 236, "each new frame", "s", "start") + label(985, 248, "goes on top", "s", "start"))
+    # the platform
+    o.append(box(1110, 96, 100, 110) + label(1122, 118, "PLATFORM", "h", "start")
+             + '<rect class="box hot" x="1122" y="150" width="76" height="40" rx="5"/>'
+             + '<path class="acc" d="M1155,163 L1155,177 L1167,170 z"/>'
+             + '<rect class="acc playon" x="1122" y="150" width="76" height="40" rx="5" opacity=".25"/>')
+
+    # the moving pieces
+    o.append('<g class="seek"><rect class="box" x="-14" y="-8" width="28" height="14" rx="3"/>'
+             '<text class="x" x="0" y="2" text-anchor="middle" font-size="8">seek</text></g>')
+    o += [f'<g class="f{k}"><g><ellipse class="glow" rx="22" ry="14"/>{card()}</g></g>' for k in range(N)]
+    o.append('<g class="clipm"><ellipse class="glow" rx="26" ry="16"/><rect class="box hot" x="-14" y="-10" width="28" height="20" rx="3"/>'
+             '<path class="acc" d="M-4,-5 L-4,5 L5,0 z"/></g>')
+
+    o.append(label(40, 404, "A slow GPU fills the belts slower, never with worse frames.", "s", "start"))
+    moving = ", ".join(f".f{k} > g" for k in range(N))
+    return f'''<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1240 420" width="1240" height="420" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, monospace">
+  <title>Frame by Frame: who hands what to whom, from the recorder's commands to one MP4 on the platform</title>
+  <!-- generated by .github/flow.py: edit the script, not this file -->
+  <style>{STYLE}
+    {css()}
+    @media (prefers-reduced-motion: reduce) {{ * {{ animation: none !important; }} .seek, .clipm, {moving}, .stop, .enc, .playon, .emit {{ opacity: 0; }} }}
   </style>
   <defs>
-    <pattern id="grid" width="16" height="16" patternUnits="userSpaceOnUse"><circle class="dot" cx="1" cy="1" r="1"/></pattern>
+    <pattern id="grid" width="18" height="18" patternUnits="userSpaceOnUse"><circle class="dot" cx="1" cy="1" r="1"/></pattern>
     <radialGradient id="glow"><stop offset="0" stop-color="#ff6a3d" stop-opacity=".45"/><stop offset="1" stop-color="#ff6a3d" stop-opacity="0"/></radialGradient>
   </defs>
-
-  <rect class="bg" width="900" height="290" rx="12"/>
-  <rect width="900" height="290" rx="12" fill="url(#grid)"/>
-
-  <!-- game audio: CS2's WAV, piped along the top to the encoder -->
-  <path class="pipe" d="M150,52 V26 H750 V132"/>
-  <path class="audio" d="M150,52 V26 H750 V132"/>
-  <text class="s" x="450" y="20" text-anchor="middle">game audio (WAV)</text>
-
-  <!-- arms out over the belt -->
-  <rect class="arm" x="113" y="118" width="14" height="40" rx="2"/>
-  <rect class="arm" x="283" y="118" width="14" height="40" rx="2"/>
-  <rect class="arm" x="453" y="118" width="14" height="40" rx="2"/>
-
-  <!-- 1 CS2 -->
-  <rect class="m" x="70" y="52" width="100" height="70" rx="6"/>
-  <rect class="scr" x="80" y="62" width="64" height="42" rx="2"/>
-  <path class="thin" d="M84,94 L98,86 L110,90 L140,76 M124,68 v10 M119,73 h10"/>
-  <circle class="rec" cx="158" cy="64" r="3.5"/>
-  <text class="k" x="80" y="116">REC</text>
-
-  <!-- 2 RAM -->
-  <rect class="m" x="235" y="52" width="110" height="70" rx="6"/>
-  {"".join(f'<rect class="stick" x="{245 + i * 13}" y="60" width="9" height="54" rx="1"/>' for i in range(7))}
-
-  <!-- 3 Convert -->
-  <rect class="m" x="410" y="52" width="100" height="70" rx="6"/>
-  <g class="dial">
-    <circle class="ln" cx="460" cy="85" r="24" fill="none"/>
-    <circle class="thin" cx="460" cy="85" r="18" stroke-width="4" stroke-dasharray="1 4.65"/>
-    <path class="thin" d="M460,85 L460,65"/>
-  </g>
-  <circle class="ln" cx="460" cy="85" r="5" fill="none"/>
-
-  <!-- the belt -->
-  <rect class="belt" x="60" y="152" width="530" height="48" rx="6"/>
-  <path class="tread" d="M66,176 H584"/>
-  <rect class="roll" x="54" y="148" width="10" height="56" rx="3"/>
-  <rect class="roll" x="586" y="148" width="10" height="56" rx="3"/>
-
-  <!-- 4 the encoder's basket, then the encoder -->
-  <rect class="tray" x="602" y="138" width="80" height="76" rx="6"/>
-  <text class="k" x="642" y="133" text-anchor="middle">frames</text>
-  <path class="thin" d="M684,176 H698 M692,171 L698,176 L692,181"/>
-  <rect class="m" x="700" y="132" width="100" height="88" rx="6"/>
-  <rect class="slot" x="709" y="142" width="26" height="30" rx="2"/>
-  <rect class="slot" x="737" y="142" width="26" height="30" rx="2"/>
-  <rect class="slot" x="765" y="142" width="26" height="30" rx="2"/>
-  <text class="k" x="722" y="184" font-size="7.5" text-anchor="middle">AV1</text>
-  <text class="k" x="750" y="184" font-size="7.5" text-anchor="middle">H.265</text>
-  <text class="k" x="778" y="184" font-size="7.5" text-anchor="middle">H.264</text>
-  <rect class="gbg" x="709" y="196" width="82" height="8" rx="2"/>
-  <rect class="acc gauge" x="709" y="196" width="82" height="8" rx="2"/>
-  <rect class="acc work" x="709" y="142" width="26" height="30" rx="2" opacity=".85"/>
-
-  <!-- 5 the clip tray -->
-  <rect class="tray" x="824" y="138" width="66" height="76" rx="6"/>
-  <rect class="clip" x="837" y="150" width="40" height="26" rx="3"/>
-  <rect class="clip" x="837" y="158" width="40" height="26" rx="3"/>
-  <path class="play" d="M852,165 L852,177 L862,171 z"/>
-  <g class="eject"><rect class="clip" x="785" y="176" width="40" height="26" rx="3"/><path class="play" d="M800,183 L800,195 L810,189 z"/></g>
-
-  <!-- frames -->
-  <g transform="translate({X0},176)">
-    {"".join(frame(k) for k in range(N))}
-  </g>
-
-  <!-- lamps at the arm ends (over the frames) -->
-  <circle class="ledo" cx="120" cy="152" r="4"/><circle class="acc lamp1" cx="120" cy="152" r="4"/>
-  <circle class="ledo" cx="290" cy="152" r="4"/><circle class="acc lamp2" cx="290" cy="152" r="4"/>
-  <circle class="ledo" cx="460" cy="152" r="4"/><circle class="acc lamp3" cx="460" cy="152" r="4"/>
-
-  <!-- steps -->
-  <circle class="badge" cx="80" cy="234" r="8"/><text class="num" x="80" y="238" text-anchor="middle">1</text>
-  <text class="t" x="94" y="238">RENDER</text><text class="s" x="94" y="253">CS2, frame by frame</text>
-  <circle class="badge" cx="250" cy="234" r="8"/><text class="num" x="250" y="238" text-anchor="middle">2</text>
-  <text class="t" x="264" y="238">RAM</text><text class="s" x="264" y="253">TGA in /dev/shm</text>
-  <circle class="badge" cx="420" cy="234" r="8"/><text class="num" x="420" y="238" text-anchor="middle">3</text>
-  <text class="t" x="434" y="238">CONVERT</text><text class="s" x="434" y="253">TGA to raw video</text>
-  <circle class="badge" cx="612" cy="234" r="8"/><text class="num" x="612" y="238" text-anchor="middle">4</text>
-  <text class="t" x="626" y="238">ENCODE</text><text class="s" x="626" y="253">all frames + audio</text>
-  <circle class="badge" cx="790" cy="234" r="8"/><text class="num" x="790" y="238" text-anchor="middle">5</text>
-  <text class="t" x="804" y="238">CLIP</text><text class="s" x="804" y="253">one MP4</text>
-  <text class="s" x="450" y="280" text-anchor="middle">Each frame takes as long as the GPU needs, so a slow GPU makes the same clip as a fast one. It just takes longer.</text>
+  <rect class="bg" width="1240" height="420" rx="14"/>
+  <rect width="1240" height="420" rx="14" fill="url(#grid)"/>
+  <text class="s" x="40" y="44" letter-spacing="2">FRAME BY FRAME · WHO HANDS WHAT TO WHOM</text>
+  {"".join(o)}
 </svg>
 '''
 
 
 if __name__ == "__main__":
     open(sys.argv[1], "w").write(svg())
+    print(f"loop {T}s;", " ".join(f"f{k}: out {f['emit']:.2f} conv {f['start']:.2f} stacked {f['stacked']:.2f}" for k, f in enumerate(F)))
